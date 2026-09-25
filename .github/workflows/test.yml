@@ -28,12 +28,18 @@ jobs:
         # once already. Home, work and other zones are real places; a raw lat,lon is
         # stored in plain text upstream and must never reach this tree.
         run: |
-          # *.yml is deliberately not scanned: this workflow is the scanner and carries
+          # Scan what is TRACKED, not what is on disk. The working brief lives in this
+          # directory, is gitignored, and names a suburb -- so a filesystem scan fails
+          # on every developer machine while passing in CI. A check that cries wolf
+          # locally is one people stop reading, and it also means "is it committed?"
+          # and "is it present?" stop being the same question. git ls-files answers
+          # exactly the question the check is named after.
+          #
+          # *.yml is deliberately excluded: this workflow is the scanner and carries
           # the pattern. The add-on manifest is *.yaml and IS scanned.
-          if grep -rniE "allison|gosford|[0-9]{2}\.[0-9]{4,},[ ]?1[0-9]{2}\.[0-9]{4,}" \
-               --include="*.py" --include="*.md" --include="*.yaml" \
-               --include="*.json" --include="*.sh" --include="Dockerfile" --include="run" \
-               --exclude-dir=.git . ; then
+          FILES=$(git ls-files -- '*.py' '*.md' '*.yaml' '*.json' '*.sh' 'Dockerfile' '**/Dockerfile' 'run' '**/run')
+          if [ -z "$FILES" ]; then echo "scrub found no files to scan -- refusing to pass"; exit 1; fi
+          if echo "$FILES" | xargs grep -niE "allison|gosford|[0-9]{2}\.[0-9]{4,},[ ]?1[0-9]{2}\.[0-9]{4,}" ; then
             echo "Something identifying is committed"
             exit 1
           fi
