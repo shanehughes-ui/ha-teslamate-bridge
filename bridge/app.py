@@ -105,6 +105,13 @@ _TOKEN = {
 }
 
 
+# The bare /token is the one TeslaMate actually uses. With the TOKEN environment
+# variable set it runs in third-party-provider mode -- the same mode the commercial
+# Tesla API proxies use -- and posts to <TESLA_AUTH_HOST>/token, NOT to the Tesla SSO
+# path. Serving only the oauth2 paths gets "Error: Tokens are invalid" on the sign-in
+# page and a 404 in this log, which is exactly how this was found on the first real
+# install. The others are kept because the ordinary (non-proxy) sign-in uses them.
+@app.post("/token")
 @app.post("/oauth2/v3/token")
 @app.post("/api/oauth2/v3/token")
 @app.post("/api/1/auth/token")
