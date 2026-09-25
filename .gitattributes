@@ -1,0 +1,12 @@
+# Everything that runs on the Home Assistant host is Linux. A CRLF checkout on Windows
+# would put a \r in the entrypoint's shebang and the container would fail to start with
+# an error that names nothing. Pin these to LF regardless of core.autocrlf.
+*           text=auto
+*.py        text eol=lf
+*.sh        text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.toml      text eol=lf
+*.md        text eol=lf
+Dockerfile  text eol=lf
+addon/run   text eol=lf
