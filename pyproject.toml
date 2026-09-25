@@ -1,0 +1,6 @@
+# Test configuration only. The bridge has no build step; the add-on's Dockerfile
+# installs its three runtime dependencies (fastapi, uvicorn, httpx).
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.DS_Store
+
+# The working brief. It names local network addresses and a real suburb, and the
+# scrub check in CI is there precisely so nothing like that is ever committed.
+PLAN.md
+
+# Local tooling, not part of the bridge
+.claude/

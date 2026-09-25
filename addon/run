@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bashio
+# The add-on entrypoint. The bridge reads /data/options.json itself, so this only has
+# to pick a log level and start the server on the port TeslaMate is pointed at.
+set -e
+
+LOG_LEVEL="$(bashio::config 'log_level' 'info')"
+export LOG_LEVEL
+
+bashio::log.info "ha-teslamate-bridge starting on :8080 (log level ${LOG_LEVEL})"
+cd /app
+exec python3 -m uvicorn bridge.app:app --host 0.0.0.0 --port 8080 --log-level "${LOG_LEVEL}" --no-access-log

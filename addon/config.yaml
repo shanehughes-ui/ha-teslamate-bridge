@@ -1,0 +1,58 @@
+name: HA TeslaMate Bridge
+version: "0.1.0"
+slug: ha_teslamate_bridge
+description: >-
+  Presents a car that lives in Home Assistant to a stock TeslaMate as a Tesla Owner API.
+  Read-only: it can never send a command to the car.
+url: https://github.com/shanehughes-ui/ha-teslamate-bridge
+arch:
+  - amd64
+  - aarch64
+startup: services
+init: false
+# Grants SUPERVISOR_TOKEN and http://supervisor/core/api so no long-lived token is
+# stored anywhere. Reads only.
+homeassistant_api: true
+ports:
+  8080/tcp: null
+ports_description:
+  8080/tcp: >-
+    The Owner-API shim. Only the TeslaMate add-on needs it, and it reaches this
+    container by hostname (local-ha-teslamate-bridge) on the add-on network, so leave
+    this unmapped unless you want to curl it from a workstation.
+options:
+  display_name: Geely EX2
+  vin: GEELYEX2HABRIDGE1
+  car_entity_prefix: geely_e22h_gp_0137
+  session_energy_entity: sensor.ev_stats_session_energy
+  session_energy_fallback_entity: sensor.ev_session_energy
+  outside_temp_entity: ""
+  max_plausible_kmh: 150
+  stale_after_seconds: 2700
+  online_grace_seconds: 300
+  log_level: info
+  entity_overrides: []
+schema:
+  display_name: str
+  # Synthetic; any unique 17 characters. Changing it later registers a NEW car in
+  # TeslaMate and orphans the history, so set it once.
+  vin: str
+  # Every car entity id is derived from this: sensor.<prefix>_battery and so on.
+  car_entity_prefix: str
+  # Session energy is READ from the stats system that already tracks it.
+  session_energy_entity: str?
+  session_energy_fallback_entity: str?
+  # The car reports no outside temperature. Name a local weather entity here or leave
+  # the field absent; the bridge never invents a number.
+  outside_temp_entity: str?
+  # A fix implying more than this between consecutive samples is rejected.
+  max_plausible_kmh: float
+  # Car data older than this is reported asleep regardless of what it says.
+  stale_after_seconds: int
+  # After a drive or charge ends, stay awake this long so TeslaMate sees it end.
+  online_grace_seconds: int
+  log_level: list(debug|info|warning|error)
+  # Override any single role (see bridge/config.py ROLE_TEMPLATES) with an entity id.
+  entity_overrides:
+    - role: str
+      entity_id: str

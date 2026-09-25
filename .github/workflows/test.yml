@@ -1,0 +1,73 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  pure:
+    # The arithmetic and the judgement, with no Home Assistant, no web framework and no
+    # network anywhere. If this job ever needs one of those installed, the separation
+    # the pure modules exist for has been lost and that is worth failing over.
+    name: Pure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pytest
+      - run: python -m pytest tests -q
+
+      - name: Nothing identifying is committed
+        # This project's sibling found a real person's name in its test fixtures on
+        # the day it went public, and this exact check has caught a coordinate leak
+        # once already. Home, work and other zones are real places; a raw lat,lon is
+        # stored in plain text upstream and must never reach this tree.
+        run: |
+          # *.yml is deliberately not scanned: this workflow is the scanner and carries
+          # the pattern. The add-on manifest is *.yaml and IS scanned.
+          if grep -rniE "allison|gosford|[0-9]{2}\.[0-9]{4,},[ ]?1[0-9]{2}\.[0-9]{4,}" \
+               --include="*.py" --include="*.md" --include="*.yaml" \
+               --include="*.json" --include="*.sh" --include="Dockerfile" --include="run" \
+               --exclude-dir=.git . ; then
+            echo "Something identifying is committed"
+            exit 1
+          fi
+
+      - name: Assert the pure modules import nothing from HA, the web layer or the network
+        run: |
+          for module in units sanitise mapping config; do
+            if grep -nE "^\s*(from|import)\s+(homeassistant|fastapi|starlette|httpx|requests|aiohttp)" "bridge/$module.py"; then
+              echo "$module.py is no longer pure"
+              exit 1
+            fi
+          done
+
+  addon:
+    # The add-on manifest must stay valid YAML and the Dockerfile must reference files
+    # that exist in the deploy layout, or the Supervisor build fails after a click.
+    name: Add-on manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pyyaml
+      - run: |
+          python - <<'EOF'
+          import yaml, sys
+          cfg = yaml.safe_load(open("addon/config.yaml"))
+          for key in ("name", "version", "slug", "arch", "options", "schema"):
+              assert key in cfg, key
+          assert cfg["slug"] == "ha_teslamate_bridge"
+          assert cfg.get("homeassistant_api") is True
+          assert set(cfg["options"]) == set(cfg["schema"]), "options and schema drift"
+          build = yaml.safe_load(open("addon/build.yaml"))
+          assert set(build["build_from"]) >= set(cfg["arch"])
+          print("add-on manifest ok:", cfg["name"], cfg["version"])
+          EOF

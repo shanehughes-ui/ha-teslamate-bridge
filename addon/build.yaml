@@ -1,0 +1,5 @@
+# Tags verified to exist on ghcr.io on 2026-09-25 (3.13 tags were not published for
+# this alpine line at the time). Python 3.12 is more than the bridge needs.
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.23
+  aarch64: ghcr.io/home-assistant/aarch64-base-python:3.12-alpine3.23
